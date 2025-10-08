@@ -7,6 +7,10 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class CuevanaProvider : MainAPI() {
     override var mainUrl = "https://cuevana.biz"
@@ -215,15 +219,42 @@ class CuevanaProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         app.get(data).document.select("li.open_submenu").map {
-            it.select("li.clili").apmap {
+            val languaje = it.text().trim().replaceFirst(" L", "_L").substringBefore(" ")
+            it.select("li.clili").amap {
                 val iframe = fixUrl(it.attr("data-tr"))
                 app.get(iframe).document.select("script")
                     .firstOrNull { it.html().contains("var url = '") }?.html()
                     ?.substringAfter("var url = '")?.substringBefore("';")?.let {
-                        loadExtractor(it, mainUrl, subtitleCallback, callback)
+                        loadSourceNameExtractor(languaje, it, mainUrl, subtitleCallback, callback)
                     }
             }
         }
         return true
+    }
+}
+
+suspend fun loadSourceNameExtractor(
+    source: String,
+    url: String,
+    referer: String? = null,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+) {
+    loadExtractor(url, referer, subtitleCallback) { link ->
+        CoroutineScope(Dispatchers.IO).launch {
+            callback.invoke(
+                newExtractorLink(
+                    "$source[${link.source}]",
+                    "$source[${link.source}]",
+                    link.url,
+                ) {
+                    this.quality = link.quality
+                    this.type = link.type
+                    this.referer = link.referer
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
+            )
+        }
     }
 }
