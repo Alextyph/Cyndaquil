@@ -1,24 +1,12 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import android.annotation.TargetApi
-import android.os.Build
-import android.util.Base64
-import android.util.Log
 import android.webkit.URLUtil
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.helper.AesHelper
-import com.lagradost.cloudstream3.extractors.helper.CryptoJS
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.utils.loadExtractor
+import com.stormunblessed.Embed69Extractor
+import com.stormunblessed.fixHostsLinks
 import org.jsoup.nodes.Element
-import java.nio.ByteBuffer
-import java.security.MessageDigest
-import java.util.Arrays
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 class PelisplusHDProvider : MainAPI() {
     override var mainUrl = "https://pelisplushd.bz"
@@ -143,50 +131,6 @@ class PelisplusHDProvider : MainAPI() {
         }
     }
 
-    fun decryptLink(encryptedLinkBase64: String, secretKey: String): String? {
-        return try {
-            CryptoJS.decrypt(secretKey, encryptedLinkBase64)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            try {
-                val encryptedData = Base64.decode(encryptedLinkBase64, Base64.DEFAULT)
-                val byteBuffer = ByteBuffer.wrap(encryptedData)
-                val iv = ByteArray(16)
-                byteBuffer.get(iv)
-                val encryptedBytes = ByteArray(byteBuffer.remaining())
-                byteBuffer.get(encryptedBytes)
-                val keyBytes = secretKey.toByteArray(Charsets.UTF_8)
-                val secretKeySpec = SecretKeySpec(keyBytes, "AES")
-                val ivSpec = IvParameterSpec(iv)
-                val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-                cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivSpec)
-                val decryptedBytes = cipher.doFinal(encryptedBytes)
-                String(decryptedBytes, Charsets.UTF_8)
-                    .replace("<", "\\u003c")
-                    .replace(">", "\\u003e")
-                    .replace("\"", "&quot;")
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        }
-    }
-
-    suspend fun customLoadExtractor(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit)
-    {
-        loadExtractor(url
-            .replaceFirst("https://hglink.to", "https://streamwish.to")
-            .replaceFirst("https://swdyu.com","https://streamwish.to")
-            .replaceFirst("https://mivalyo.com", "https://vidhidepro.com")
-            .replaceFirst("https://filemoon.link", "https://filemoon.sx")
-            .replaceFirst("https://sblona.com", "https://watchsb.com")
-            , referer, subtitleCallback, callback)
-    }
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -200,18 +144,7 @@ class PelisplusHDProvider : MainAPI() {
                 )
                     .amap { frameLink ->
                         if (frameLink.startsWith("https://embed69.org/")) {
-                            val linkRegex = """"link":"(.*?)"""".toRegex()
-                            val links = app.get(frameLink).document.select("script")
-                                .firstOrNull { it.html().contains("const dataLink = [") }?.html()
-                                ?.substringAfter("const dataLink = ")
-                                ?.substringBefore(";")?.let {
-                                    linkRegex.findAll(it).map { it.groupValues[1] }.map {
-                                        decryptLink(it, "Ak7qrvvH4WKYxV2OgaeHAEg2a5eh16vE")
-                                    }.filterNotNull()
-                                }?.toList();
-                            links?.amap {
-                                customLoadExtractor(it, data, subtitleCallback, callback)
-                            }
+                            Embed69Extractor.load(frameLink, data, subtitleCallback, callback)
                         } else {
                             val regex = """(go_to_player|go_to_playerVast)\('(.*?)'""".toRegex()
                             regex.findAll(app.get(frameLink).document.html()).toList().apmap {
@@ -243,8 +176,8 @@ class PelisplusHDProvider : MainAPI() {
                                                         "https://embedsito.com"
                                                     )
                                                     .replace(Regex(".poster.*"), "")
-                                                customLoadExtractor(
-                                                    linkdecoded,
+                                                loadExtractor(
+                                                    fixHostsLinks(linkdecoded),
                                                     link,
                                                     subtitleCallback,
                                                     callback
@@ -255,8 +188,8 @@ class PelisplusHDProvider : MainAPI() {
                                                     ?.substringBefore("',")
                                             if(!secondlink.isNullOrBlank()){
                                                 if(secondlink.startsWith("http")){
-                                                    customLoadExtractor(
-                                                        secondlink,
+                                                    loadExtractor(
+                                                        fixHostsLinks(secondlink),
                                                         link,
                                                         subtitleCallback,
                                                         callback
@@ -273,8 +206,8 @@ class PelisplusHDProvider : MainAPI() {
                                                                 "https://embedsito.com"
                                                             )
                                                             ?.replace(Regex(".poster.*"), "")
-                                                    customLoadExtractor(
-                                                        thirdlink!!,
+                                                    loadExtractor(
+                                                        fixHostsLinks(thirdlink!!),
                                                         link,
                                                         subtitleCallback,
                                                         callback
@@ -284,7 +217,7 @@ class PelisplusHDProvider : MainAPI() {
 
                                         }
                                     } else {
-                                        customLoadExtractor(link, data, subtitleCallback, callback)
+                                        loadExtractor(fixHostsLinks(link), data, subtitleCallback, callback)
                                     }
                                 }
                             }
