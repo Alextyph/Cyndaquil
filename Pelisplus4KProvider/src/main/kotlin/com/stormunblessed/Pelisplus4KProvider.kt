@@ -121,21 +121,6 @@ class Pelisplus4KProvider :MainAPI() {
         }
     }
 
-    suspend fun customLoadExtractor(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit)
-    {
-        loadExtractor(url
-            .replaceFirst("https://hglink.to", "https://streamwish.to")
-            .replaceFirst("https://swdyu.com","https://streamwish.to")
-            .replaceFirst("https://mivalyo.com", "https://vidhidepro.com")
-            .replaceFirst("https://filemoon.link", "https://filemoon.sx")
-            .replaceFirst("https://sblona.com", "https://watchsb.com")
-            , referer, subtitleCallback, callback)
-    }
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -150,10 +135,21 @@ class Pelisplus4KProvider :MainAPI() {
             val text = app.get("$mainUrl/player/$encodedTwo").text
             val link = linkRegex.find(text)?.destructured?.component1()
             if (!link.isNullOrBlank()) {
-                customLoadExtractor(link, mainUrl, subtitleCallback, callback)
+                loadExtractor(fixHostsLinks(link), mainUrl, subtitleCallback, callback)
             }
         }
         return true
     }
 
+}
+
+fun fixHostsLinks(url: String): String {
+    return url
+        .replaceFirst("https://hglink.to", "https://streamwish.to")
+        .replaceFirst("https://swdyu.com", "https://streamwish.to")
+        .replaceFirst("https://cybervynx.com", "https://streamwish.to")
+        .replaceFirst("https://mivalyo.com", "https://vidhidepro.com")
+        .replaceFirst("https://filemoon.link", "https://filemoon.sx")
+        .replaceFirst("https://sblona.com", "https://watchsb.com")
+        .replaceFirst("https://lulu.st", "https://lulustream.com")
 }
