@@ -5,6 +5,10 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
@@ -167,9 +171,7 @@ class PelisplusOrgProvider : MainAPI() {
                 it.html().startsWith("self.__next_f.push(") && it.html().contains("\\\"capitulos\\\":[")
             }?.html()?.substringAfter("\\\"capitulos\\\":")?.substringBefore("}],")
                 ?.replace("\\\"", "\"")
-            Log.d("debugiando", "load: $json")
             val capitulos = AppUtils.tryParseJson<List<Capitulo>>(json)
-            Log.d("debugiando", "caps: $capitulos")
             var episodes = if (!capitulos.isNullOrEmpty()) {
                     capitulos.amap {
                         val titulo = it.titulo?.replace("$title ", "")
@@ -217,13 +219,76 @@ class PelisplusOrgProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val doc = app.get(data).document
-        fetchUrls(
-            doc.select("script").filter {
-                it.html().startsWith("self.__next_f.push(") && it.html().contains("\\\"enlace\\\"")
-            }.joinToString("") { it.html() }).amap {
-            customLoadExtractor(it, mainUrl, subtitleCallback, callback)
+        val text = doc.select("script").filter {
+            it.html().trim().startsWith("self.__next_f.push([1")
+        }.joinToString("") {
+            it.html().replaceFirst("self.__next_f.push([1,\"", "")
+                .replace(""""]\)$""".toRegex(), "")
+        }
+        fetchLinks(text.replace("\\\"", "\"")).amap {
+            loadSourceNameExtractor(it.lang!!, fixHostsLinks(it.url!!), data, subtitleCallback, callback)
         }
         return true
     }
 
+    data class Link(
+        val lang: String?,
+        val url: String?
+    )
+
+    fun fetchLinks(text: String?): List<Link> {
+        if (text.isNullOrEmpty()) {
+            return listOf()
+        }
+        val linkRegex =
+            Regex(""""enlace":"(https?://(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*))","tipo":\d,"idioma":(\d)""")
+        return linkRegex.findAll(text).map { Link(getLang(it.groupValues[4]), it.groupValues[1]) }.toList()
+    }
+
+    fun getLang(str: String): String {
+        return when (str) {
+            "1" -> "Latino"
+            "2" -> "Español"
+            "3" -> "Subtitulado"
+            else -> ""
+        }
+    }
+
+}
+
+suspend fun loadSourceNameExtractor(
+    source: String,
+    url: String,
+    referer: String? = null,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+) {
+    loadExtractor(url, referer, subtitleCallback) { link ->
+        CoroutineScope(Dispatchers.IO).launch {
+            callback.invoke(
+                newExtractorLink(
+                    "$source[${link.source}]",
+                    "$source[${link.source}]",
+                    link.url,
+                ) {
+                    this.quality = link.quality
+                    this.type = link.type
+                    this.referer = link.referer
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
+            )
+        }
+    }
+}
+
+fun fixHostsLinks(url: String): String {
+    return url
+        .replaceFirst("https://hglink.to", "https://streamwish.to")
+        .replaceFirst("https://swdyu.com", "https://streamwish.to")
+        .replaceFirst("https://cybervynx.com", "https://streamwish.to")
+        .replaceFirst("https://mivalyo.com", "https://vidhidepro.com")
+        .replaceFirst("https://filemoon.link", "https://filemoon.sx")
+        .replaceFirst("https://sblona.com", "https://watchsb.com")
+        .replaceFirst("https://lulu.st", "https://lulustream.com")
 }

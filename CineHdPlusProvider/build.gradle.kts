@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 4
+version = 1
 
 
 cloudstream {
@@ -18,9 +18,9 @@ cloudstream {
      * */
     status = 1 // will be 3 if unspecified
     tvTypes = listOf(
-        "Movie",
         "TvSeries",
+        "Movie",
     )
 
-    iconUrl = "https://pelis-plus.icu/assets/img/ic/favicon-96x96.png"
+    iconUrl = "https://cinehdplus.org/wp-content/uploads/2021/11/favicon.png"
 }
