@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import kotlinx.coroutines.delay
 import okhttp3.RequestBody
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.net.URLEncoder
 
@@ -317,7 +318,7 @@ class AniwaveProvider : MainAPI() {
             this.seasonNames = names.map { (name, int) -> SeasonData(int, name) }
             plot = info.selectFirst(".synopsis > .shorting > .content")?.text()
             this.posterUrl = poster
-            rating = ratingElement.attr("data-score").toFloat().times(1000f).toInt()
+//            rating = ratingElement.attr("data-score").toFloat().times(1000f).toInt()
             this.backgroundPosterUrl = backposter
             this.tags = genres
             this.recommendations = recss
@@ -495,7 +496,7 @@ class AniwaveProvider : MainAPI() {
                     val map = mapOf("query" to vizId, "futoken" to futoken)
                     val jsonBody = JSONObject(map).toString()
                     val mediaType = "application/json; charset=utf-8".toMediaType()
-                    val ssaeUrl = app.post("https://9anime.eltik.net/$action?apikey=lagrapps", mapOf("Content-Type" to "application/x-www-form-urlencoded"), requestBody = RequestBody.Companion.create(mediaType, jsonBody)).text.substringAfter("rawURL\"").substringAfter("\"").substringBefore("\"");
+                    val ssaeUrl = app.post("https://9anime.eltik.net/$action?apikey=lagrapps", mapOf("Content-Type" to "application/x-www-form-urlencoded"), requestBody = jsonBody.toRequestBody(mediaType)).text.substringAfter("rawURL\"").substringAfter("\"").substringBefore("\"");
 
                     val ref = if (vids) "https://vidstream.pro/" else "https://mcloud.to/"
 
@@ -515,7 +516,7 @@ class AniwaveProvider : MainAPI() {
                         val subtitle = it.file ?: ""
                         val lang = it.label ?: ""
                         subtitleCallback.invoke(
-                            SubtitleFile(lang, subtitle)
+                            newSubtitleFile(lang, subtitle)
                         )
                     }
                 }

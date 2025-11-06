@@ -37,7 +37,7 @@ class PelisplusHDProvider : MainAPI() {
                 }
             ))
         }
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
 
     private fun Element.toSearchResult(): SearchResponse {

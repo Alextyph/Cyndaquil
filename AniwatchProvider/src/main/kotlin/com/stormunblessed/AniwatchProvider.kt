@@ -16,11 +16,10 @@ import org.jsoup.nodes.Element
 import java.net.URI
 import android.util.Log
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
+import com.lagradost.cloudstream3.mvvm.safeAsync
 //import com.lagradost.cloudstream3.animeproviders.ZoroProvider
-import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import kotlinx.coroutines.delay
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.nio.charset.StandardCharsets
@@ -98,7 +97,7 @@ class AniwatchProvider : MainAPI() {
             if (animes.isNotEmpty()) homePageList.add(HomePageList(header, animes))
         }
 
-        return HomePageResponse(homePageList)
+        return newHomePageResponse(homePageList)
     }
 
     private data class Response(
@@ -639,7 +638,7 @@ class AniwatchProvider : MainAPI() {
                     ignoreCase = true
                 )
                 return if (isM3u8) {
-                    suspendSafeApiCall {
+                    safeAsync {
                         M3u8Helper().m3u8Generation(
                             M3u8Helper.M3u8Stream(
                                 this.file,
@@ -745,7 +744,7 @@ class AniwatchProvider : MainAPI() {
             extractorData: String? = null,
             decryptKey: String? = null,
             nameTransformer: (String) -> String,
-        ) = suspendSafeApiCall {
+        ) = safeAsync {
             // https://rapid-cloud.ru/embed-6/dcPOVRE57YOT?z= -> https://rapid-cloud.ru/embed-6
             val mainIframeUrl =
                 url.substringBeforeLast("/")
@@ -808,7 +807,7 @@ class AniwatchProvider : MainAPI() {
                 }
             } else {
                 response.parsedSafe()
-            } ?: return@suspendSafeApiCall
+            } ?: return@safeAsync
 
             sourceObject.tracks?.forEach { track ->
                 track?.toSubtitleFile()?.let { subtitleFile ->

@@ -74,7 +74,7 @@ class TioAnimeProvider:MainAPI() {
             items.add(HomePageList(name, home))
         }
         if (items.size <= 0) throw ErrorLoadingException()
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
 
     data class SearchObject (

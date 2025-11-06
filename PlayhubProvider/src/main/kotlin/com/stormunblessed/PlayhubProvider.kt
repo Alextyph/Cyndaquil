@@ -91,7 +91,7 @@ class PlayhubProvider:MainAPI() {
             items.add(HomePageList(name, home!!))
         }
         if (items.size <= 0) throw ErrorLoadingException()
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
     data class PlayhubSearchMain (
         @JsonProperty("movies" ) var movies : ArrayList<PlayhubSearchInfo>? = arrayListOf(),

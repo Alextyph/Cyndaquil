@@ -77,7 +77,6 @@ class JsInterceptor(private val serverid: String, private val lang: String) : In
             with(webview.settings) {
                 javaScriptEnabled = true
                 domStorageEnabled = true
-                databaseEnabled = true
                 useWideViewPort = false
                 loadWithOverviewMode = false
                 userAgentString = USER_AGENT

@@ -116,7 +116,7 @@ class JKAnimeProvider : MainAPI() {
         }
 
         if (items.size <= 0) throw ErrorLoadingException()
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
 
     /* data class MainSearch(

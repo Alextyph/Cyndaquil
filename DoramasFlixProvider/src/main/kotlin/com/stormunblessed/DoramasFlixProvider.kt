@@ -143,7 +143,7 @@ class DoramasFlixProvider:MainAPI() {
         items.add(HomePageList("Peliculas", home2!!))
         items.add(HomePageList("Doramas 2", home3!!))
         if (items.size <= 0) throw ErrorLoadingException()
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
 
     private fun tasa(

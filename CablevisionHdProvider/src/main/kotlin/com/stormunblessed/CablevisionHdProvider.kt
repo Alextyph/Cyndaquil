@@ -249,7 +249,7 @@ class CablevisionHdProvider : MainAPI() {
             items.add(HomePageList(name, home, true))
         }
 
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {

@@ -172,7 +172,7 @@ open class BflixProvider : MainAPI() {
         }
 
         if (items.size <= 0) throw ErrorLoadingException()
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
 
 
@@ -299,7 +299,6 @@ override suspend fun load(url: String): LoadResponse? {
     }
 
 
-    val rating = soup.selectFirst("div.score.live-label span b[itemprop=ratingValue]")?.text()?.toRatingInt()
     val durationdoc = (soup.selectFirst("div.meta > span:nth-child(4)") ?: soup.selectFirst("div.meta > span:nth-child(5)"))?.text() ?: ""
     val bflix = mainUrl == "https://bflix.to"
    // val year = if (bflix) soup.selectFirst("div.meta > span:nth-child(3)")?.text()
@@ -310,7 +309,6 @@ override suspend fun load(url: String): LoadResponse? {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backposter
                 this.plot = description
-                this.rating = rating
                 //this.recommendations = recommendations
                 this.tags = tags
                 //this.year = year?.toIntOrNull()
@@ -322,7 +320,6 @@ override suspend fun load(url: String): LoadResponse? {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backposter
                 this.plot = description
-                this.rating = rating
                 //this.recommendations = recommendations
                 this.tags = tags
                 //this.year = year?.toIntOrNull()

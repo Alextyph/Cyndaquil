@@ -62,7 +62,7 @@ class PelisplusOrgProvider : MainAPI() {
                 items.add(HomePageList(name, home))
             }
         }
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
 
 

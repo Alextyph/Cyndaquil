@@ -44,7 +44,7 @@ class SeriesflixProvider : MainAPI() {
             items.add(HomePageList(name, home))
         }
         if (items.size <= 0) throw ErrorLoadingException()
-        return HomePageResponse(items)
+        return newHomePageResponse(items)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -84,8 +84,6 @@ class SeriesflixProvider : MainAPI() {
         val title = document.selectFirst("h1.Title")!!.text()
         val descRegex = Regex("(Recuerda.*Seriesflix.)")
         val descipt = document.selectFirst("div.Description > p")!!.text().replace(descRegex, "")
-        val rating =
-            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toRatingInt()
         val year = document.selectFirst("span.Date")?.text()
         // ?: does not work
         val duration = try {
@@ -150,7 +148,7 @@ class SeriesflixProvider : MainAPI() {
                 this.posterUrl = fixUrlNull(poster)
                 this.year = year?.toIntOrNull()
                 this.plot = descipt
-                this.rating = rating
+//                this.rating = rating
             }
         } else {
             return newMovieLoadResponse(
@@ -162,7 +160,7 @@ class SeriesflixProvider : MainAPI() {
                 posterUrl = fixUrlNull(poster)
                 this.year = year?.toIntOrNull()
                 this.plot = descipt
-                this.rating = rating
+//                this.rating = rating
                 addDuration(duration)
             }
         }
