@@ -127,11 +127,11 @@ class Pelisplus4KProvider :MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        val linkRegex = Regex("\\{ window\\.location\\.href = '(.*)' \\}")
         val doc = app.get(data).document
-        doc.select("div ul.subselect li").apmap {
+        doc.select("div ul.subselect li").amap {
             val encodedOne = it.attr("data-server").toByteArray()
             val encodedTwo = base64Encode(encodedOne)
-            val linkRegex = Regex("window\\.location\\.href\\s*=\\s*'(.*)'")
             val text = app.get("$mainUrl/player/$encodedTwo").text
             val link = linkRegex.find(text)?.destructured?.component1()
             if (!link.isNullOrBlank()) {

@@ -7,6 +7,10 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.time.LocalDate
 import java.util.Calendar
@@ -210,10 +214,10 @@ class HDFullProvider : MainAPI() {
                 ?.substringBefore("';")
         if (!hash.isNullOrEmpty()) {
             val json = decodeHash(hash)
-            json.apmap {
+            json.amap {
                 val url = getUrlByProvider(it.provider, it.code)
                 if (url.isNotEmpty()) {
-                    loadExtractor(url, mainUrl, subtitleCallback, callback)
+                    loadSourceNameExtractor(it.lang, url, mainUrl, subtitleCallback, callback)
                 }
             }
         }
@@ -268,4 +272,41 @@ class HDFullProvider : MainAPI() {
         }
     }
 
+}
+
+suspend fun loadSourceNameExtractor(
+    source: String,
+    url: String,
+    referer: String? = null,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+) {
+    loadExtractor(url, referer, subtitleCallback) { link ->
+        CoroutineScope(Dispatchers.IO).launch {
+            callback.invoke(
+                newExtractorLink(
+                    "$source[${link.source}]",
+                    "$source[${link.source}]",
+                    link.url,
+                ) {
+                    this.quality = link.quality
+                    this.type = link.type
+                    this.referer = link.referer
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
+            )
+        }
+    }
+}
+
+fun fixHostsLinks(url: String): String {
+    return url
+        .replaceFirst("https://hglink.to", "https://streamwish.to")
+        .replaceFirst("https://swdyu.com", "https://streamwish.to")
+        .replaceFirst("https://cybervynx.com", "https://streamwish.to")
+        .replaceFirst("https://mivalyo.com", "https://vidhidepro.com")
+        .replaceFirst("https://filemoon.link", "https://filemoon.sx")
+        .replaceFirst("https://sblona.com", "https://watchsb.com")
+        .replaceFirst("https://lulu.st", "https://lulustream.com")
 }
