@@ -21,8 +21,8 @@ data class Teams(
 )
 
 data class TeamInfo(
-    val name: String,
-    val badge: String
+    val name: String?,
+    val badge: String?
 )
 
 data class Source(
