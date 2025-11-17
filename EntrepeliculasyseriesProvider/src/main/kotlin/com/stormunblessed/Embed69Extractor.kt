@@ -107,6 +107,7 @@ fun fixHostsLinks(url: String): String {
         .replaceFirst("https://dumbalag.com", "https://streamwish.to")
         .replaceFirst("https://mivalyo.com", "https://vidhidepro.com")
         .replaceFirst("https://dinisglows.com", "https://vidhidepro.com")
+        .replaceFirst("https://dhtpre.com", "https://vidhidepro.com")
         .replaceFirst("https://filemoon.link", "https://filemoon.sx")
         .replaceFirst("https://sblona.com", "https://watchsb.com")
         .replaceFirst("https://lulu.st", "https://lulustream.com")
