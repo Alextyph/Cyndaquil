@@ -1,9 +1,11 @@
 package com.lagradost.cloudstream3.movieproviders
 
+import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.Cinestart
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import org.jsoup.nodes.Element
 
 class CinecalidadProvider : MainAPI() {
     override var mainUrl = "https://www.cinecalidad.ec"
@@ -19,61 +21,39 @@ class CinecalidadProvider : MainAPI() {
     override val vpnStatus = VPNStatus.MightBeNeeded //Due to evoload sometimes not loading
 
     override val mainPage = mainPageOf(
-        Pair("$mainUrl/ver-serie/page/", "Series"),
-        Pair("$mainUrl/page/", "Peliculas"),
-        Pair("$mainUrl/genero-de-la-pelicula/peliculas-en-calidad-4k/page/", "4K UHD"),
+        "ver-serie" to "Series",
+        "fecha-de-lanzamiento/2025" to "Estrenos",
+        "genero-de-la-pelicula/animacion" to "Animación",
     )
 
-    override suspend fun getMainPage(
-        page: Int,
-        request : MainPageRequest
-    ): HomePageResponse {
-        val url = request.data + page
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val document = app.get("$mainUrl/${request.data}/page/$page").document
+        val home = document.select(".item.movies")
+            .mapNotNull { it.toSearchResult() }
+        return newHomePageResponse(
+            list = HomePageList(
+                name = request.name,
+                list = home,
+                isHorizontalImages = false
+            ),
+            hasNext = true
+        )
+    }
 
-        val soup = app.get(url).document
-        val home = soup.select(".item.movies").map {
-            val title = it.selectFirst("div.in_title")!!.text()
-            val link = it.selectFirst("a")!!.attr("href")
-            newTvSeriesSearchResponse(
-                title,
-                link,
-                if (link.contains("/ver-pelicula/")) TvType.Movie else TvType.TvSeries,
-            ){
-                this.posterUrl = it.selectFirst(".poster.custom img")!!.attr("data-src")
-            }
+    private fun Element.toSearchResult(): SearchResponse {
+        val title = this.selectFirst("div.in_title")!!.text()
+        val link = this.selectFirst("a")!!.attr("href")
+        val posterUrl = this.selectFirst(".poster.custom img")!!.attr("data-src")
+        return newMovieSearchResponse(title, link, TvType.Movie) {
+            this.posterUrl = posterUrl
         }
-
-        return newHomePageResponse(request.name, home)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/?s=${query}"
-        val document = app.get(url).document
-
-        return document.select("article.item").map {
-            val title = it.selectFirst("div.in_title")!!.text()
-            val href = it.selectFirst("a")!!.attr("href")
-            val image = it.selectFirst("img.lazy")!!.attr("data-src")
-            val isMovie = href.contains("/ver-pelicula/")
-
-            if (isMovie) {
-                newMovieSearchResponse(
-                    title,
-                    href,
-                    TvType.Movie,
-                ){
-                    this.posterUrl = image
-                }
-            } else {
-                newTvSeriesSearchResponse(
-                    title,
-                    href,
-                    TvType.TvSeries,
-                ){
-                    this.posterUrl = image
-                }
-            }
-        }
+        val document = app.get("$mainUrl/?s=${query}").document
+        val results =
+            document.select("article.item").mapNotNull { it.toSearchResult() }
+        return results
     }
 
 
@@ -96,10 +76,10 @@ class CinecalidadProvider : MainAPI() {
             val season = if (isValid) seasonid.getOrNull(0) else null
             newEpisode(
                 href,
-            ){
+            ) {
                 this.name = name
                 this.season = season
-                this.episode= episode
+                this.episode = episode
                 this.posterUrl = if (epThumb.contains("svg")) null else epThumb
 
             }
@@ -112,22 +92,24 @@ class CinecalidadProvider : MainAPI() {
                     url,
                     tvType,
                     episodes,
-                ){
+                ) {
                     this.posterUrl = poster
                     this.plot = description
                 }
             }
+
             TvType.Movie -> {
                 newMovieLoadResponse(
                     title,
                     url,
                     tvType,
                     url
-                ){
+                ) {
                     this.posterUrl = poster
                     this.plot = description
                 }
             }
+
             else -> null
         }
     }
@@ -138,12 +120,27 @@ class CinecalidadProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-         app.get(data).document.select(".linklist ul li").amap {
-             val url = it.select("li").attr("data-option")
-             loadExtractor(url, mainUrl, subtitleCallback, callback)
-         }
-
-
+        app.get(data).document.select(".linklist ul li").amap {
+            val url = it.select("li").attr("data-option")
+            Log.d("qwerty", "loadLinks: $url")
+            loadExtractor(fixHostsLinks(url), mainUrl, subtitleCallback, callback)
+        }
         return true
     }
+}
+
+fun fixHostsLinks(url: String): String {
+    return url
+        .replaceFirst("https://hglink.to", "https://streamwish.to")
+        .replaceFirst("https://swdyu.com", "https://streamwish.to")
+        .replaceFirst("https://cybervynx.com", "https://streamwish.to")
+        .replaceFirst("https://dumbalag.com", "https://streamwish.to")
+        .replaceFirst("https://mivalyo.com", "https://vidhidepro.com")
+        .replaceFirst("https://dinisglows.com", "https://vidhidepro.com")
+        .replaceFirst("https://dhtpre.com", "https://vidhidepro.com")
+        .replaceFirst("https://filemoon.link", "https://filemoon.sx")
+        .replaceFirst("https://sblona.com", "https://watchsb.com")
+        .replaceFirst("https://lulu.st", "https://lulustream.com")
+        .replaceFirst("https://uqload.io", "https://uqload.com")
+        .replaceFirst("https://do7go.com", "https://dood.la")
 }
