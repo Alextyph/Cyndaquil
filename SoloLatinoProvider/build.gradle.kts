@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 5
+version = 6
 
 
 cloudstream {
     language = "mx"
     // All of these properties are optional, you can safely remove them
 
-    //description = "Lorem Ipsum"
+    description = "Peliculas, series, animes y cartoons en Español y Español Latio"
     authors = listOf("misajimenezmx")
 
     /**

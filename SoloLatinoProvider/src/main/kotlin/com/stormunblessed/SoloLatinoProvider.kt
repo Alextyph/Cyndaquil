@@ -77,8 +77,8 @@ class SoloLatinoProvider : MainAPI() {
         val doc = app.get(url).document
         val tvType = if (url.contains("peliculas")) TvType.Movie else TvType.TvSeries
         val title = doc.selectFirst("div.data h1")?.text() ?: ""
-//        val backimage = doc.selectFirst("head meta[property=og:image]")!!.attr("content")
-        val poster = doc.selectFirst("div.poster img")!!.attr("src")
+        val poster = doc.selectFirst("div.poster img")!!.attr("data-src")
+        val backimage = doc.selectFirst(".wallpaper")?.attr("style")?.substringAfter("url(")?.substringBefore(");")
         val description = doc.selectFirst("div.wp-content")!!.text()
         val tags = doc.select("div.sgeneros a").map { it.text() }
         var episodes = if (tvType == TvType.TvSeries) {
@@ -90,7 +90,7 @@ class SoloLatinoProvider : MainAPI() {
                         it.selectFirst("div.episodiotitle div.numerando")?.text()?.split("-")?.map {
                             it.trim().toIntOrNull()
                         }
-                    val realimg = it.selectFirst("div.imagen img")?.attr("src")
+                    val realimg = it.selectFirst("div.imagen img")?.attr("data-src")
                     newEpisode(epurl) {
                         this.name = epTitle
                         this.season = seasonEpisodeNumber?.getOrNull(0)
@@ -108,7 +108,7 @@ class SoloLatinoProvider : MainAPI() {
                     url, tvType, episodes,
                 ) {
                     this.posterUrl = poster
-                    this.backgroundPosterUrl = poster
+                    this.backgroundPosterUrl = backimage ?: poster
                     this.plot = description
                     this.tags = tags
                 }
@@ -117,7 +117,7 @@ class SoloLatinoProvider : MainAPI() {
             TvType.Movie -> {
                 newMovieLoadResponse(title, url, tvType, url) {
                     this.posterUrl = poster
-                    this.backgroundPosterUrl = poster
+                    this.backgroundPosterUrl = backimage ?: poster
                     this.plot = description
                     this.tags = tags
                 }
