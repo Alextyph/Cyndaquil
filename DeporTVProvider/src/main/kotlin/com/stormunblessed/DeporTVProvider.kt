@@ -33,13 +33,14 @@ data class La14HDMatchInfo(
     val time: String,
     val status: String,
     val language: String,
-    val date: String
+    val date: String?
 )
 
 enum class SiteKey {
     RUSTICO,
     FUTBOLLIBRE,
     LA14HD,
+    STREAMTPCLOUD,
 }
 
 data class Site(
@@ -64,6 +65,11 @@ class DeporTVProvider : MainAPI() {
                 "https://la14hd.com",
                 "https://la14hd.com/eventos/json/agenda123.json"
             ),
+            Site(
+                SiteKey.STREAMTPCLOUD,
+                "https://streamtpcloud.com",
+                "https://streamtpcloud.com/eventos.json?nocache=${Date().time}"
+            ),
         )
     override var name = "DeporTV"
     override var lang = "mx"
@@ -87,7 +93,7 @@ class DeporTVProvider : MainAPI() {
             val url = it.agendaUrl
             val res = app.get(url)
             var events: List<EventData> = emptyList()
-            if (it.key.equals(SiteKey.LA14HD)) {
+            if (it.key.equals(SiteKey.LA14HD) || it.key.equals(SiteKey.STREAMTPCLOUD)) {
                 events = AppUtils.tryParseJson<List<La14HDMatchInfo>>(res.text)
                     ?.map {
                         EventData(
@@ -318,7 +324,8 @@ class DeporTVProvider : MainAPI() {
                                 }
                             }
                     }
-            } else if (frame.startsWith("https://stgruber.world/cobo1.php?id=UNIVERSO")) {
+            } else if (frame.startsWith("https://stgruber.world")) {
+                // https://stgruber.world/cobo1.php?id=UNIVERSO
                 val source = URL(frame).host
                 var result = app.get(
                     frame,
@@ -340,11 +347,17 @@ class DeporTVProvider : MainAPI() {
                         val drmKidBytes = channelinfo.k1?.chunked(2)
                             ?.map { it.toInt(16).toByte() }
                             ?.toByteArray()
-                        val drmKidBase64 = Base64.encodeToString(drmKidBytes, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
+                        val drmKidBase64 = Base64.encodeToString(
+                            drmKidBytes,
+                            Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
+                        )
                         val drmKeyBytes = channelinfo.k2?.chunked(2)
                             ?.map { it.toInt(16).toByte() }
                             ?.toByteArray()
-                        val drmKeyBase64 = Base64.encodeToString(drmKeyBytes, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
+                        val drmKeyBase64 = Base64.encodeToString(
+                            drmKeyBytes,
+                            Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
+                        )
                         callback.invoke(
                             newDrmExtractorLink(
                                 "${source}[$channelId]",
@@ -352,7 +365,7 @@ class DeporTVProvider : MainAPI() {
                                 channelinfo.url,
                                 ExtractorLinkType.DASH,
                                 CLEARKEY_UUID
-                            ){
+                            ) {
                                 this.quality = Qualities.Unknown.value
                                 this.kid = drmKidBase64
                                 this.key = drmKeyBase64
