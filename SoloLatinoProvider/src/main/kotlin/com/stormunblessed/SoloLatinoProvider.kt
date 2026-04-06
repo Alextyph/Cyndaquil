@@ -23,7 +23,7 @@ class SoloLatinoProvider : MainAPI() {
         val items = ArrayList<HomePageList>()
         val urls = listOf(
             Pair("Peliculas", "$mainUrl/peliculas"),
-            Pair("Series", "$mainUrl/series"),
+            Pair("Series", "$mainUrl/serie"),
             Pair("Animes", "$mainUrl/animes"),
             Pair("Cartoons", "$mainUrl/genre_series/toons"),
         )
